@@ -1,0 +1,4 @@
+---
+dotfile_repo: "https://github.com/craftycatz/dotfiles"
+
+dotfile_path: "$HOME/.config"

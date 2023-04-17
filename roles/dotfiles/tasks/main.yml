@@ -1,0 +1,10 @@
+--- 
+-name: configure dotfiles
+ git:
+  repo: "{{ dotfile_repo }}"
+  version: main
+  update: false
+  dest: "{{ dotfile_path }}"
+  depth: 1
+become: true
+become_user: "{{ dofile_user }}"

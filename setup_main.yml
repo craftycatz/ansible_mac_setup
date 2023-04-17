@@ -1,0 +1,139 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Install homebrew
+      include_role:
+        name: geerlingguy.mac.homebrew
+
+    - name: Make sure homebrew bin is in path
+      ansible.builtin.lineinfile:
+        path: /etc/paths
+        state: present
+        line: '/opt/homebrew/bin'
+      become: true
+      become_user: root
+
+    - name: 'add custom homebrew repos'
+      community.general.homebrew_tap:
+        name: [
+          adoptopenjdk/openjdk,
+          fishtown-analytics/dbt,
+          heroku/brew,
+          homebrew/cask-versions,
+          thoughtbot/formulae,
+          weaveworks/tap,
+        ]
+
+    - name: Install core packages via brew casks
+      community.general.homebrew_cask:
+        name: "{{ item }}"
+      ignore_errors: yes
+      with_items:
+        - 1password
+        - docker
+        - iterm2
+        - visual-studio-code
+        - discord
+        - clion
+        - raycast
+        - arc
+
+    - name: "Install homebrew packages"
+      community.general.homebrew:
+        name: [
+          'curl',
+          'direnv',
+          'dnsmasq',
+          'htop',
+          'mas',
+          'openssl' ,
+          'pkg-config',
+          'rcm',
+          'sqlite3',
+          'tmux',
+          'unixodbc',
+          'unzip',
+          'nvim',
+          'watchman',
+          'tree',
+          'xz',
+          'yarn',
+          'pnpm',
+          'node',
+          'nvm',
+          'zlib',
+          'zsh',
+          'zsh-syntax-highlighting',
+        ]
+        state: present
+        update_homebrew: yes
+
+    - name: "Install from Mac app store"
+      shell: mas install {{ item }}
+      with_items:
+        - 497799835 # xcode
+
+    - name: Get the path to ZSH
+      become: false
+      local_action: command which zsh
+      register: zsh_path
+
+    - name: "Ensure homebrew zsh is in allowed shells"
+      lineinfile:
+        path: /etc/shells
+        line: "{{ zsh_path.stdout }}"
+      become: true
+
+    - name: Set ZSH as the default shell
+      shell: chsh -s $(which zsh) {{ lookup('env', 'USER') }}
+      become: true
+
+    - name: "Create a default ZSH configuration"
+      template:
+        src: templates/.zshrc.j2
+        dest: /Users/{{ lookup('env', 'USER') }}/.zshrc
+        owner: "{{ lookup('env', 'USER') }}"
+        force: yes
+
+    - name: "Install starship"
+      shell: curl -fsSL https://starship.rs/install.sh | bash -s -- -y
+      become: true
+
+    - name: "install rust"
+      shell: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+      become: true
+
+    - name: "Configure dotfiles"
+      include_role:
+        name: dotfiles
+      
+    # Add something which ensures path is set here
+    - name: Install VSCode extensions
+      shell: code --install-extension {{ item }}
+      with_items:
+        - bradlc.vscode-tailwindcss
+        - eamodio.gitlens
+        - richie5um2.vscode-sort-json
+        - Tyriar.sort-lines
+        - vscodevim.vim
+        - xabikos.javascriptsnippets
+        - streetsidesoftware.code-spell-checker
+        - fabiospampinato.vscode-todo-plus
+        - rust-lang.rust-analyzer
+        - catppuccin.catppuccin-vsc
+        - icrawl.discord-vscode
+        - astro-build.astro-vscode
+        - formulahendry.auto-rename-tag
+        - ms-azuretools.vscode-docker
+        - dbaeumer.vscode-eslint
+        - github.copilot
+        - golang.go
+        - hashicorp.terraform
+        - prisma.prisma
+        - msjsdiag.vscode-react-native
+        - tauri-apps.tauri-vscode
+        - vue.volar
+        - zixuanchen.vitest-explorer
+        - esbenp.prettier-vscode
+        - unifiedjs.vscode-mdx
+        - usernamehw.errorlens
